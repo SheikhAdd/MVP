@@ -10,7 +10,7 @@
   <!-- Font Awesome CDN -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
   <style>
-    #routeCanvas {
+    #routeCanvas, #simRouteCanvas {
       touch-action: none;
     }
   </style>
@@ -93,6 +93,35 @@
       <p>Имя: <span id="driverName"></span></p>
       <p>Телефон: <span id="driverPhone"></span></p>
       <p>Заработок: $<span id="driverEarnings"></span></p>
+      
+      <!-- Форма для ввода карты -->
+      <div class="mt-6">
+        <h3 class="text-lg font-bold mb-2">Добавить карту</h3>
+        <form id="cardForm" class="mb-4">
+          <div class="mb-2">
+            <label for="cardNumber" class="block text-sm font-medium text-gray-700">Номер карты</label>
+            <input type="text" id="cardNumber" name="cardNumber" placeholder="1234 5678 9012 3456" class="mt-1 p-2 border rounded-lg w-full" required>
+          </div>
+          <div class="mb-2">
+            <label for="expiryDate" class="block text-sm font-medium text-gray-700">Срок действия</label>
+            <input type="text" id="expiryDate" name="expiryDate" placeholder="MM/YY" class="mt-1 p-2 border rounded-lg w-full" required>
+          </div>
+          <div class="mb-2">
+            <label for="cvv" class="block text-sm font-medium text-gray-700">CVV</label>
+            <input type="text" id="cvv" name="cvv" placeholder="123" class="mt-1 p-2 border rounded-lg w-full" required>
+          </div>
+          <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-lg">Добавить карту</button>
+        </form>
+        
+        <!-- Отображение информации о карте -->
+        <div id="cardInfo" class="hidden bg-gray-100 p-4 rounded-lg">
+          <h4 class="font-bold mb-2">Информация о карте:</h4>
+          <p>Номер карты: <span id="displayCardNumber"></span></p>
+          <p>Срок действия: <span id="displayExpiryDate"></span></p>
+          <p>CVV: <span id="displayCvv"></span></p>
+        </div>
+      </div>
+      
       <button id="logout" class="mt-4 bg-red-500 text-white p-2 rounded-lg">Выйти</button>
     </div>
 
@@ -135,7 +164,7 @@
       const response = await fetch('/driver/register', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        credentials: 'include', // Добавлено
+        credentials: 'include', // Добавлено для отправки cookies
         body: JSON.stringify({
           name: document.getElementById('name').value,
           phone: document.getElementById('phone').value,
@@ -156,7 +185,7 @@
       const response = await fetch('/driver/login', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        credentials: 'include', // Добавлено
+        credentials: 'include', // Добавлено для отправки cookies
         body: JSON.stringify({
           phone: document.getElementById('loginPhone').value,
           password: document.getElementById('loginPassword').value
@@ -177,7 +206,7 @@
     document.getElementById('logout').addEventListener('click', async () => {
       const response = await fetch('/driver/logout', {
         method: 'POST',
-        credentials: 'include' // Добавлено
+        credentials: 'include' // Добавлено для отправки cookies
       });
       const data = await response.json();
       alert(data.message);
@@ -196,32 +225,40 @@
     // Получение профиля
     async function getProfile() {
       const response = await fetch('/driver/profile', {
-        credentials: 'include' // Добавлено
+        credentials: 'include' // Добавлено для отправки cookies
       });
-      const data = await response.json();
-      document.getElementById('driverName').innerText = data.name;
-      document.getElementById('driverPhone').innerText = data.phone;
-      document.getElementById('driverEarnings').innerText = data.earnings.toFixed(2);
+      if (response.ok) {
+        const data = await response.json();
+        document.getElementById('driverName').innerText = data.name;
+        document.getElementById('driverPhone').innerText = data.phone;
+        document.getElementById('driverEarnings').innerText = data.earnings.toFixed(2);
+      } else {
+        console.error('Ошибка получения профиля:', await response.json());
+      }
     }
 
     // Получение списка кампаний
     async function getCampaigns() {
       const response = await fetch('/driver/campaigns', {
-        credentials: 'include' // Добавлено
+        credentials: 'include' // Добавлено для отправки cookies
       });
-      const campaigns = await response.json();
-      let html = '';
-      campaigns.forEach(campaign => {
-        html += `
-          <div class="mb-4 p-4 bg-white rounded-lg shadow-md">
-            <h3 class="font-bold">${campaign.title}</h3>
-            <p>Компания: ${campaign.company_name}</p>
-            <p>Бюджет: $${campaign.budget}</p>
-            <button onclick="applyToCampaign(${campaign.id})" class="mt-2 bg-blue-500 text-white py-1 px-3 rounded-lg">Подать заявку</button>
-          </div>
-        `;
-      });
-      document.getElementById('campaignsList').innerHTML = html;
+      if (response.ok) {
+        const campaigns = await response.json();
+        let html = '';
+        campaigns.forEach(campaign => {
+          html += `
+            <div class="mb-4 p-4 bg-white rounded-lg shadow-md">
+              <h3 class="font-bold">${campaign.title}</h3>
+              <p>Компания: ${campaign.company_name}</p>
+              <p>Бюджет: $${campaign.budget}</p>
+              <button onclick="applyToCampaign(${campaign.id})" class="mt-2 bg-blue-500 text-white py-1 px-3 rounded-lg">Подать заявку</button>
+            </div>
+          `;
+        });
+        document.getElementById('campaignsList').innerHTML = html;
+      } else {
+        console.error('Ошибка получения кампаний:', await response.json());
+      }
     }
 
     // Обновление списка кампаний
@@ -232,34 +269,42 @@
       const response = await fetch('/driver/apply', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        credentials: 'include', // Добавлено
+        credentials: 'include', // Добавлено для отправки cookies
         body: JSON.stringify({ campaign_id: campaignId })
       });
       const data = await response.json();
       alert(data.message);
-      getApplications();
+      if (response.ok) {
+        getApplications();
+      }
     }
 
     // Получение статуса заявок
     async function getApplications() {
       const response = await fetch('/driver/applications', {
-        credentials: 'include' // Добавлено
+        method: 'GET',
+        credentials: 'include' // Добавлено для отправки cookies
       });
-      const applications = await response.json();
-      let html = '';
-      if (Array.isArray(applications)) {
-        applications.forEach(app => {
-          html += `
-            <div class="mb-4 p-4 bg-white rounded-lg shadow-md">
-              <h3 class="font-bold">${app.title}</h3>
-              <p>Статус: ${app.status}</p>
-            </div>
-          `;
-        });
+      if (response.ok) {
+        const applications = await response.json();
+        console.log('Полученные заявки:', applications); // Для отладки
+        let html = '';
+        if (Array.isArray(applications)) {
+          applications.forEach(app => {
+            html += `
+              <div class="mb-4 p-4 bg-white rounded-lg shadow-md">
+                <h3 class="font-bold">${app.title}</h3>
+                <p>Статус: ${app.status}</p>
+              </div>
+            `;
+          });
+        } else {
+          console.error('Ошибка получения заявок:', applications);
+        }
+        document.getElementById('applicationsList').innerHTML = html;
       } else {
-        console.error('Ошибка получения заявок:', applications);
+        console.error('Ошибка получения заявок:', await response.json());
       }
-      document.getElementById('applicationsList').innerHTML = html;
     }
 
     // Обновление списка заявок
@@ -299,7 +344,12 @@
           document.getElementById('trackingStatus').innerText = 'Трекинг активен.';
           watchId = navigator.geolocation.watchPosition(position => {
             if (lastPosition) {
-              const distance = calculateDistance(lastPosition.coords.latitude, lastPosition.coords.longitude, position.coords.latitude, position.coords.longitude);
+              const distance = calculateDistance(
+                lastPosition.coords.latitude,
+                lastPosition.coords.longitude,
+                position.coords.latitude,
+                position.coords.longitude
+              );
               totalDistance += distance;
               const earnings = distance * 0.5; // Допустим, $0.5 за км
               totalEarnings += earnings;
@@ -316,11 +366,13 @@
                   distance: distance,
                   earnings: earnings
                 })
+              }).catch(error => {
+                console.error('Ошибка отправки данных на сервер:', error);
               });
             }
             lastPosition = position;
           }, error => {
-            console.error(error);
+            console.error('Ошибка геолокации:', error);
             alert('Ошибка получения геолокации. Пожалуйста, убедитесь, что геолокация включена и разрешена для этого сайта.');
             stopTracking();
           });
@@ -356,16 +408,18 @@
       const response = await fetch('/driver/applications', {
         credentials: 'include' // Добавлено
       });
-      const applications = await response.json();
-      if (Array.isArray(applications)) {
+      if (response.ok) {
+        const applications = await response.json();
+        console.log('Полученные заявки:', applications); // Для отладки
         const approved = applications.find(app => app.status === 'accepted');
         if (approved) {
-          approvedCampaignId = approved.campaign_id;
+          approvedCampaignId = approved.campaign_id; // Исправлено
+          console.log('Одобренная кампания ID:', approvedCampaignId); // Для отладки
         } else {
           alert('У вас нет одобренных кампаний. Пожалуйста, подайте заявку и дождитесь одобрения.');
         }
       } else {
-        console.error('Ошибка получения заявок:', applications);
+        console.error('Ошибка получения заявок:', await response.json());
       }
     }
 
@@ -386,54 +440,54 @@
     }
 
     // Симуляция маршрута
-    const canvas = document.getElementById('routeCanvas');
-    const ctx = canvas.getContext('2d');
-    let isDrawing = false;
+    const simCanvas = document.getElementById('routeCanvas');
+    const simCtx = simCanvas.getContext('2d');
+    let isDrawingSim = false;
     let simDistance = 0;
     let simEarnings = 0;
 
     // Установка размеров канваса
-    function resizeCanvas() {
-      canvas.width = canvas.parentElement.clientWidth;
-      canvas.height = 256; // Высота канваса в пикселях
+    function resizeSimCanvas() {
+      simCanvas.width = simCanvas.parentElement.clientWidth;
+      simCanvas.height = 256; // Высота канваса в пикселях
     }
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    resizeSimCanvas();
+    window.addEventListener('resize', resizeSimCanvas);
 
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('mouseup', endDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('touchstart', startDrawing);
-    canvas.addEventListener('touchend', endDrawing);
-    canvas.addEventListener('touchmove', draw);
+    simCanvas.addEventListener('mousedown', startDrawingSim);
+    simCanvas.addEventListener('mouseup', endDrawingSim);
+    simCanvas.addEventListener('mousemove', drawSim);
+    simCanvas.addEventListener('touchstart', startDrawingSim);
+    simCanvas.addEventListener('touchend', endDrawingSim);
+    simCanvas.addEventListener('touchmove', drawSim);
 
-    function startDrawing(e) {
-      isDrawing = true;
-      const { x, y } = getMousePosition(e);
-      ctx.beginPath();
-      ctx.moveTo(x, y);
+    function startDrawingSim(e) {
+      isDrawingSim = true;
+      const { x, y } = getSimMousePosition(e);
+      simCtx.beginPath();
+      simCtx.moveTo(x, y);
       e.preventDefault();
     }
 
-    function endDrawing() {
-      isDrawing = false;
-      ctx.beginPath();
+    function endDrawingSim() {
+      isDrawingSim = false;
+      simCtx.beginPath();
       // Отправляем итоговые данные на сервер
       if (simDistance > 0 && simEarnings > 0) {
         sendSimulationData();
       }
     }
 
-    function draw(e) {
-      if (!isDrawing) return;
-      const { x, y } = getMousePosition(e);
-      ctx.lineWidth = 3;
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = '#1D4ED8';
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(x, y);
+    function drawSim(e) {
+      if (!isDrawingSim) return;
+      const { x, y } = getSimMousePosition(e);
+      simCtx.lineWidth = 3;
+      simCtx.lineCap = 'round';
+      simCtx.strokeStyle = '#1D4ED8';
+      simCtx.lineTo(x, y);
+      simCtx.stroke();
+      simCtx.beginPath();
+      simCtx.moveTo(x, y);
       simDistance += 0.01; // Добавляем фиксированное значение для простоты
       simEarnings += 0.005; // Добавляем фиксированное значение для простоты
       document.getElementById('simDistance').innerText = simDistance.toFixed(2);
@@ -441,8 +495,8 @@
       e.preventDefault();
     }
 
-    function getMousePosition(e) {
-      let rect = canvas.getBoundingClientRect();
+    function getSimMousePosition(e) {
+      let rect = simCanvas.getBoundingClientRect();
       let x, y;
       if (e.touches && e.touches.length > 0) {
         x = e.touches[0].clientX - rect.left;
@@ -455,7 +509,7 @@
     }
 
     document.getElementById('clearCanvas').addEventListener('click', () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      simCtx.clearRect(0, 0, simCanvas.width, simCanvas.height);
       simDistance = 0;
       simEarnings = 0;
       document.getElementById('simDistance').innerText = '0';
@@ -472,7 +526,7 @@
       const response = await fetch('/driver/track', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        credentials: 'include', // Добавлено
+        credentials: 'include', // Добавлено для отправки cookies
         body: JSON.stringify({
           campaign_id: approvedCampaignId,
           distance: simDistance,
@@ -491,8 +545,49 @@
       simEarnings = 0;
       document.getElementById('simDistance').innerText = '0';
       document.getElementById('simEarnings').innerText = '0';
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      simCtx.clearRect(0, 0, simCanvas.width, simCanvas.height);
     }
+
+    // Добавление обработки формы для карты
+    document.getElementById('cardForm').addEventListener('submit', function(e) {
+      e.preventDefault(); // Предотвращаем отправку формы
+
+      // Получаем значения из полей формы
+      const cardNumber = document.getElementById('cardNumber').value.trim();
+      const expiryDate = document.getElementById('expiryDate').value.trim();
+      const cvv = document.getElementById('cvv').value.trim();
+
+      // Валидация простых форматов (можно расширить по необходимости)
+      const cardNumberPattern = /^\d{4}\s\d{4}\s\d{4}\s\d{4}$/;
+      const expiryDatePattern = /^(0[1-9]|1[0-2])\/\d{2}$/;
+      const cvvPattern = /^\d{3}$/;
+
+      if (!cardNumberPattern.test(cardNumber)) {
+        alert('Пожалуйста, введите корректный номер карты (например, 1234 5678 9012 3456).');
+        return;
+      }
+
+      if (!expiryDatePattern.test(expiryDate)) {
+        alert('Пожалуйста, введите корректный срок действия (например, 12/25).');
+        return;
+      }
+
+      if (!cvvPattern.test(cvv)) {
+        alert('Пожалуйста, введите корректный CVV (например, 123).');
+        return;
+      }
+
+      // Отображаем информацию о карте
+      document.getElementById('displayCardNumber').innerText = cardNumber;
+      document.getElementById('displayExpiryDate').innerText = expiryDate;
+      document.getElementById('displayCvv').innerText = cvv;
+
+      // Показываем блок с информацией о карте
+      document.getElementById('cardInfo').classList.remove('hidden');
+
+      // Очищаем форму
+      document.getElementById('cardForm').reset();
+    });
 
     // Вызываем функции при загрузке
     document.addEventListener('DOMContentLoaded', () => {
