@@ -1,0 +1,304 @@
+<!-- public/business.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Business App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <!-- Форма регистрации -->
+  <div id="registerSection" class="flex justify-center items-center min-h-screen">
+    <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-md">
+      <h2 class="text-2xl font-bold mb-6 text-center">Регистрация бизнеса</h2>
+      <form id="registerForm">
+        <input type="text" id="company_name" placeholder="Название компании" class="mb-4 w-full p-2 border rounded-lg" required>
+        <input type="text" id="contact_info" placeholder="Контактная информация" class="mb-4 w-full p-2 border rounded-lg" required>
+        <input type="password" id="password" placeholder="Пароль" class="mb-4 w-full p-2 border rounded-lg" required>
+        <button type="submit" class="bg-green-500 w-full py-2 text-white rounded-lg">Зарегистрироваться</button>
+      </form>
+      <p class="mt-4 text-center">Уже есть аккаунт? <a href="#" id="toLogin" class="text-green-500">Войти</a></p>
+    </div>
+  </div>
+
+  <!-- Форма входа -->
+  <div id="loginSection" class="hidden flex justify-center items-center min-h-screen">
+    <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-md">
+      <h2 class="text-2xl font-bold mb-6 text-center">Вход для бизнеса</h2>
+      <form id="loginForm">
+        <input type="text" id="loginCompanyName" placeholder="Название компании" class="mb-4 w-full p-2 border rounded-lg" required>
+        <input type="password" id="loginPassword" placeholder="Пароль" class="mb-4 w-full p-2 border rounded-lg" required>
+        <button type="submit" class="bg-green-500 w-full py-2 text-white rounded-lg">Войти</button>
+      </form>
+      <p class="mt-4 text-center">Нет аккаунта? <a href="#" id="toRegister" class="text-green-500">Зарегистрироваться</a></p>
+    </div>
+  </div>
+
+  <!-- Главный интерфейс -->
+  <div id="appSection" class="hidden pb-16">
+    <!-- Разделы приложения -->
+    <div id="campaignSection" class="p-4">
+      <h2 class="text-xl font-bold mb-4">Кампании</h2>
+      <form id="createCampaignForm" class="mb-4">
+        <input type="text" id="title" placeholder="Название кампании" class="mb-2 w-full p-2 border rounded-lg" required>
+        <input type="number" id="budget" placeholder="Бюджет кампании" class="mb-2 w-full p-2 border rounded-lg" required>
+        <button type="submit" class="bg-green-500 w-full py-2 text-white rounded-lg">Создать кампанию</button>
+      </form>
+      <button id="refreshCampaigns" class="bg-green-500 text-white p-2 rounded-lg mb-4">Обновить список кампаний</button>
+      <div id="campaignsList" class="mt-4"></div>
+    </div>
+
+    <div id="applicationsSection" class="hidden p-4">
+      <h2 class="text-xl font-bold mb-4">Заявки от водителей</h2>
+      <button id="refreshApplications" class="bg-green-500 text-white p-2 rounded-lg mb-4">Обновить список заявок</button>
+      <div id="applicationsList"></div>
+    </div>
+
+    <div id="analyticsSection" class="hidden p-4">
+      <h2 class="text-xl font-bold mb-4">Аналитика</h2>
+      <button id="getAnalytics" class="bg-green-500 text-white p-2 rounded-lg">Получить аналитику</button>
+      <div id="analyticsData" class="mt-4"></div>
+    </div>
+
+    <div id="profileSection" class="hidden p-4">
+      <h2 class="text-xl font-bold mb-4">Профиль</h2>
+      <p>Компания: <span id="businessName"></span></p>
+      <p>Контактная информация: <span id="businessContact"></span></p>
+      <button id="logout" class="mt-4 bg-red-500 text-white p-2 rounded-lg">Выйти</button>
+    </div>
+
+    <!-- Навигационная панель -->
+    <nav class="bg-white shadow fixed bottom-0 w-full flex justify-around">
+      <button class="py-2 px-4 flex flex-col items-center" onclick="showSection('campaignSection')">
+        <i class="fas fa-bullhorn text-xl"></i>
+        <span>Кампании</span>
+      </button>
+      <button class="py-2 px-4 flex flex-col items-center" onclick="showSection('applicationsSection')">
+        <i class="fas fa-file-alt text-xl"></i>
+        <span>Заявки</span>
+      </button>
+      <button class="py-2 px-4 flex flex-col items-center" onclick="showSection('analyticsSection')">
+        <i class="fas fa-chart-line text-xl"></i>
+        <span>Аналитика</span>
+      </button>
+      <button class="py-2 px-4 flex flex-col items-center" onclick="showSection('profileSection')">
+        <i class="fas fa-user text-xl"></i>
+        <span>Профиль</span>
+      </button>
+    </nav>
+  </div>
+
+  <script>
+    // Переключение между регистрацией и логином
+    document.getElementById('toLogin').addEventListener('click', () => {
+      document.getElementById('registerSection').classList.add('hidden');
+      document.getElementById('loginSection').classList.remove('hidden');
+    });
+
+    document.getElementById('toRegister').addEventListener('click', () => {
+      document.getElementById('loginSection').classList.add('hidden');
+      document.getElementById('registerSection').classList.remove('hidden');
+    });
+
+    // Регистрация
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const response = await fetch('/business/register', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'include', // Добавлено для отправки cookies
+        body: JSON.stringify({
+          company_name: document.getElementById('company_name').value,
+          contact_info: document.getElementById('contact_info').value,
+          password: document.getElementById('password').value
+        })
+      });
+      const data = await response.json();
+      alert(data.message);
+      if (response.ok) {
+        document.getElementById('registerSection').classList.add('hidden');
+        document.getElementById('loginSection').classList.remove('hidden');
+      }
+    });
+
+    // Вход
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const response = await fetch('/business/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'include', // Добавлено для отправки cookies
+        body: JSON.stringify({
+          company_name: document.getElementById('loginCompanyName').value,
+          password: document.getElementById('loginPassword').value
+        })
+      });
+      const data = await response.json();
+      alert(data.message);
+      if (response.ok) {
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('appSection').classList.remove('hidden');
+        getApplications();
+        getCampaigns();
+        getProfile();
+      }
+    });
+
+    // Выход
+    document.getElementById('logout').addEventListener('click', async () => {
+      const response = await fetch('/business/logout', {
+        method: 'POST',
+        credentials: 'include' // Добавлено для отправки cookies
+      });
+      const data = await response.json();
+      alert(data.message);
+      location.reload();
+    });
+
+    // Функция для переключения разделов
+    function showSection(sectionId) {
+      document.getElementById('campaignSection').classList.add('hidden');
+      document.getElementById('applicationsSection').classList.add('hidden');
+      document.getElementById('analyticsSection').classList.add('hidden');
+      document.getElementById('profileSection').classList.add('hidden');
+      document.getElementById(sectionId).classList.remove('hidden');
+    }
+
+    // Получение профиля
+    async function getProfile() {
+      const response = await fetch('/business/profile', {
+        method: 'GET',
+        credentials: 'include' // Добавлено для отправки cookies
+      });
+      if (response.ok) {
+        const data = await response.json();
+        document.getElementById('businessName').innerText = data.company_name;
+        document.getElementById('businessContact').innerText = data.contact_info;
+      } else {
+        console.error('Ошибка получения профиля:', await response.json());
+      }
+    }
+
+    // Создание кампании
+    document.getElementById('createCampaignForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const response = await fetch('/business/campaigns', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'include', // Добавлено для отправки cookies
+        body: JSON.stringify({
+          title: document.getElementById('title').value,
+          budget: document.getElementById('budget').value
+        })
+      });
+      const data = await response.json();
+      alert(data.message);
+      if (response.ok) {
+        getCampaigns();
+      }
+    });
+
+    // Получение списка кампаний
+    async function getCampaigns() {
+      const response = await fetch('/business/campaigns', {
+        method: 'GET',
+        credentials: 'include' // Добавлено для отправки cookies
+      });
+      if (response.ok) {
+        const campaigns = await response.json();
+        let html = '';
+        campaigns.forEach(campaign => {
+          html += `
+            <div class="mb-4 p-4 bg-white rounded-lg shadow-md">
+              <h3 class="font-bold">${campaign.title}</h3>
+              <p>Бюджет: $${campaign.budget}</p>
+              <p>Статус: ${campaign.status}</p>
+            </div>
+          `;
+        });
+        document.getElementById('campaignsList').innerHTML = html;
+      } else {
+        console.error('Ошибка получения кампаний:', await response.json());
+      }
+    }
+
+    // Обновление списка кампаний
+    document.getElementById('refreshCampaigns').addEventListener('click', getCampaigns);
+
+    // Получение списка заявок
+    async function getApplications() {
+      const response = await fetch('/business/applications', {
+        method: 'GET',
+        credentials: 'include' // Добавлено для отправки cookies
+      });
+      if (response.ok) {
+        const applications = await response.json();
+        let html = '';
+        applications.forEach(app => {
+          html += `
+            <div class="mb-4 p-4 bg-white rounded-lg shadow-md">
+              <h3 class="font-bold">${app.name} (${app.phone})</h3>
+              <p>Кампания: ${app.title}</p>
+              <button onclick="respondToApplication(${app.id}, 'accepted')" class="mt-2 bg-green-500 text-white py-1 px-3 rounded-lg">Принять</button>
+              <button onclick="respondToApplication(${app.id}, 'rejected')" class="mt-2 bg-red-500 text-white py-1 px-3 rounded-lg">Отклонить</button>
+            </div>
+          `;
+        });
+        document.getElementById('applicationsList').innerHTML = html;
+      } else {
+        console.error('Ошибка получения заявок:', await response.json());
+      }
+    }
+
+    // Обновление списка заявок
+    document.getElementById('refreshApplications').addEventListener('click', getApplications);
+
+    // Ответ на заявку
+    async function respondToApplication(applicationId, responseStatus) {
+      const res = await fetch('/business/applications/respond', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'include', // Добавлено для отправки cookies
+        body: JSON.stringify({ application_id: applicationId, response: responseStatus })
+      });
+      const data = await res.json();
+      alert(data.message);
+      if (res.ok) {
+        getApplications(); // Обновляем список заявок
+      }
+    }
+
+    // Получение аналитики
+    document.getElementById('getAnalytics').addEventListener('click', async () => {
+      const response = await fetch('/business/analytics', {
+        method: 'GET',
+        credentials: 'include' // Добавлено для отправки cookies
+      });
+      if (response.ok) {
+        const data = await response.json();
+        let html = '<ul>';
+        data.forEach(campaign => {
+          html += `<li class="mb-4 p-4 bg-white rounded-lg shadow-md">
+            <h3 class="font-bold">${campaign.title}</h3>
+            <p>Пройденная дистанция: ${campaign.total_distance || 0} км</p>
+            <p>Затрачено: $${campaign.total_earnings || 0}</p>
+          </li>`;
+        });
+        html += '</ul>';
+        document.getElementById('analyticsData').innerHTML = html;
+      } else {
+        console.error('Ошибка получения аналитики:', await response.json());
+      }
+    });
+
+    // Вызываем функции при загрузке
+    document.addEventListener('DOMContentLoaded', () => {
+      // Ничего не делаем, функции вызываются после входа
+    });
+  </script>
+</body>
+</html>
